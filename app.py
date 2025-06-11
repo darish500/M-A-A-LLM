@@ -1,73 +1,36 @@
-import os
-import streamlit as st
 import openai
+import streamlit as st
 from datetime import datetime
 
-# ——— Page Setup ———
-st.set_page_config(
-    page_title="💘 Romantic Poem Generator",
-    layout="centered",
-    page_icon="🌹"
-)
-st.title("💘 AI Romantic Poem Generator")
-st.markdown("Choose language & theme, then let AI craft a poem that speaks to the heart.")
+# Set your API key directly (temporary for testing, remove later)
+openai.api_key = "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"
 
-# ——— Load API Key Securely ———
-openai.api_key = (
-    st.secrets["openai"]["api_key"]
-    if "openai" in st.secrets and "api_key" in st.secrets["openai"]
-    else os.getenv("OPENAI_API_KEY")
-)
-if not openai.api_key:
-    st.error("🔒 API key not found. Add it to `.streamlit/secrets.toml` or set the `OPENAI_API_KEY` env var.")
-    st.stop()
+st.set_page_config(page_title="Poem Generator", layout="centered")
+st.title("📝 Emotional Poem Generator (Yorùbá + English)")
 
-# ——— User Inputs ———
-language = st.radio("Poem Language", ["English", "Yorùbá"])
-theme = st.text_input("What should the poem be about?", placeholder="e.g. her smile, our journey, moonlight…")
-use_gpt4 = st.checkbox("Use GPT-4 (if you have access)", value=False)
+# Text input for feelings
+feeling = st.text_input("Tell me what's on your heart (in English or Yorùbá)")
 
-# ——— Prompt Builder ———
-def build_messages(language, theme):
-    system = (
-        "You are a world-class romantic poet. "
-        "Use vivid metaphors, deep emotion, and heartfelt language."
-    )
-    if language == "English":
-        user = (
-            f"Write a deeply emotional romantic poem about “{theme}.” "
-            "Use metaphors, longing, vulnerability, and passion—make it unforgettable."
-        )
+# Generate button
+if st.button("Generate Poem"):
+    if feeling.strip() == "":
+        st.warning("Please enter something you're feeling.")
     else:
-        user = (
-            f"Kọ orin ifẹ̀ pẹ̀lú ìtàn tí yóò kan ọkàn ní Yorùbá nípa “{theme}.” "
-            "Lo òwe, ìtàn ìfẹ́, ìbànújẹ, àti ìdúróṣinṣin—jẹ́ kí ó dùn bí àlá alẹ́."
-        )
-    return [{"role":"system","content":system}, {"role":"user","content":user}]
+        with st.spinner("Composing your heartfelt poem..."):
+            messages = [
+                {"role": "system", "content": "You're a heartfelt poet that writes emotional, beautiful poems in both English and Yorùbá, starting with Yorùbá then translating to English."},
+                {"role": "user", "content": f"Write a deep, emotional poem about: {feeling}"}
+            ]
+            try:
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=messages
+                )
+                poem = response['choices'][0]['message']['content']
+                st.text_area("Your Poem ❤️", poem, height=400)
 
-# ——— Generate & Display ———
-if st.button("💌 Generate Poem") and theme.strip():
-    with st.spinner("Composing your masterpiece…"):
-        model = "gpt-4" if use_gpt4 else "gpt-3.5-turbo"
-        messages = build_messages(language, theme.strip())
-        resp = openai.ChatCompletion.create(
-            model=model,
-            messages=messages,
-            temperature=0.8,
-            max_tokens=250,
-        )
-        poem = resp.choices[0].message.content.strip()
-
-        st.markdown("### 💓 Your Poem")
-        st.text_area("", poem, height=300)
-
-        # ——— Download button ———
-        filename = f"poem_{theme.replace(' ','_')}_{language}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-        st.download_button(
-            "📥 Save as .txt",
-            data=poem,
-            file_name=filename,
-            mime="text/plain"
-        )
-elif st.button("💌 Generate Poem"):
-    st.warning("Please enter a theme first.")
+                # Save poem to file
+                file_name = f"poem_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                st.download_button("📥 Download Poem", poem, file_name, "text/plain")
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
