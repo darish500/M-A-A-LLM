@@ -1,36 +1,43 @@
-import openai
 import streamlit as st
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
 from datetime import datetime
 
-# Set your API key directly (temporary for testing, remove later)
-openai.api_key = "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"
+# Load model
+@st.cache_resource
+def load_model():
+    model_name = "gpt2-medium"  # Change to a better poetry model like "EleutherAI/gpt-neo-1.3B" if needed
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name)
+    return tokenizer, model
 
-st.set_page_config(page_title="Poem Generator", layout="centered")
-st.title("📝 Emotional Poem Generator (Yorùbá + English)")
+tokenizer, model = load_model()
 
-# Text input for feelings
-feeling = st.text_input("Tell me what's on your heart (in English or Yorùbá)")
+# UI
+st.title("AI Poem Generator 🌺")
+prompt = st.text_area("Write a feeling, topic, or sentence to inspire the poem", "Your love is like...")
 
-# Generate button
-if st.button("Generate Poem"):
-    if feeling.strip() == "":
-        st.warning("Please enter something you're feeling.")
-    else:
-        with st.spinner("Composing your heartfelt poem..."):
-            messages = [
-                {"role": "system", "content": "You're a heartfelt poet that writes emotional, beautiful poems in both English and Yorùbá, starting with Yorùbá then translating to English."},
-                {"role": "user", "content": f"Write a deep, emotional poem about: {feeling}"}
-            ]
-            try:
-                response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=messages
-                )
-                poem = response['choices'][0]['message']['content']
-                st.text_area("Your Poem ❤️", poem, height=400)
+max_len = st.slider("Max Length", 30, 300, 100)
+temperature = st.slider("Creativity (Temperature)", 0.7, 1.5, 1.0)
 
-                # Save poem to file
-                file_name = f"poem_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-                st.download_button("📥 Download Poem", poem, file_name, "text/plain")
-            except Exception as e:
-                st.error(f"Error: {str(e)}")
+if st.button("Generate Poem ✨"):
+    inputs = tokenizer(prompt, return_tensors="pt")
+    output = model.generate(
+        **inputs,
+        max_new_tokens=max_len,
+        do_sample=True,
+        temperature=temperature,
+        top_k=50,
+        top_p=0.95,
+        repetition_penalty=1.2,
+        pad_token_id=tokenizer.eos_token_id
+    )
+    poem = tokenizer.decode(output[0], skip_special_tokens=True)
+    st.subheader("🎵 Your Poem:")
+    st.write(poem)
+
+    if st.button("💾 Save Poem"):
+        filename = f"poem_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(poem)
+        st.success(f"Poem saved as {filename}")
