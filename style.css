@@ -1,0 +1,22 @@
+.title {
+    text-align: center;
+    font-size: 2.5rem;
+    color: #ff4081;
+    font-weight: bold;
+    font-family: 'Georgia', serif;
+    margin-bottom: 0.2em;
+}
+
+.subtitle {
+    text-align: center;
+    font-size: 1.2rem;
+    color: #f8f8f8;
+    font-family: 'Segoe UI', sans-serif;
+    margin-bottom: 2em;
+}
+
+textarea {
+    background-color: #fff0f5 !important;
+    font-family: 'Times New Roman', serif !important;
+    font-size: 1.1rem !important;
+}
