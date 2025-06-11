@@ -6,7 +6,7 @@ from datetime import datetime
 # Load model
 @st.cache_resource
 def load_model():
-    model_name = "gpt2-medium"  # Change to a better poetry model like "EleutherAI/gpt-neo-1.3B" if needed
+    model_name = "EleutherAI/gpt-neo-1.3B"  # Change to a better poetry model like "EleutherAI/gpt-neo-1.3B" if needed
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(model_name)
     return tokenizer, model
@@ -15,7 +15,7 @@ tokenizer, model = load_model()
 
 # UI
 st.title("AI Poem Generator 🌺")
-prompt = st.text_area("Write a feeling, topic, or sentence to inspire the poem", "Your love is like...")
+prompt = st.text_area("Write a feeling, topic, or sentence to inspire the poem", "")
 
 max_len = st.slider("Max Length", 30, 300, 100)
 temperature = st.slider("Creativity (Temperature)", 0.7, 1.5, 1.0)
