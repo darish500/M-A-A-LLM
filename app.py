@@ -17,7 +17,7 @@ tokenizer, model = load_model()
 st.title("AI Poem Generator 🌺")
 prompt = st.text_area("Write a feeling, topic, or sentence to inspire the poem", "Your love is like...")
 
-max_len = st.slider("Max Length", 30, 30000, 100)
+max_len = st.slider("Max Length", 30, 300000, 100)
 temperature = st.slider("Creativity (Temperature)", 0.7, 1.5, 1.0)
 
 if st.button("Generate Poem ✨"):
