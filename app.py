@@ -3,10 +3,10 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 from datetime import datetime
 
-# Load model
+# Load model (better than GPT-2)
 @st.cache_resource
 def load_model():
-    model_name = "EleutherAI/gpt-neo-1.3B"  # Change to a better poetry model like "EleutherAI/gpt-neo-1.3B" if needed
+    model_name = "EleutherAI/gpt-neo-1.3B"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(model_name)
     return tokenizer, model
@@ -14,13 +14,13 @@ def load_model():
 tokenizer, model = load_model()
 
 # UI
-st.title("AI Poem Generator 🌺")
-prompt = st.text_area("Write a feeling, topic, or sentence to inspire the poem", "")
+st.title("💖 AI Poem Generator (Powered by GPT-Neo)")
+prompt = st.text_area("Enter a topic, feeling, or first line:", "Her eyes sparkled like...")
 
-max_len = st.slider("Max Length", 30, 300, 100)
+max_len = st.slider("Max Poem Length", 30, 30000, 120)
 temperature = st.slider("Creativity (Temperature)", 0.7, 1.5, 1.0)
 
-if st.button("Generate Poem ✨"):
+if st.button("Generate Poem 🎤"):
     inputs = tokenizer(prompt, return_tensors="pt")
     output = model.generate(
         **inputs,
@@ -33,7 +33,7 @@ if st.button("Generate Poem ✨"):
         pad_token_id=tokenizer.eos_token_id
     )
     poem = tokenizer.decode(output[0], skip_special_tokens=True)
-    st.subheader("🎵 Your Poem:")
+    st.subheader("🌺 Your Generated Poem")
     st.write(poem)
 
     if st.button("💾 Save Poem"):
