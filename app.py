@@ -1,55 +1,73 @@
+import os
 import streamlit as st
-from transformers import pipeline
+import openai
 from datetime import datetime
 
-# Load the model (emotional & expressive)
-@st.cache_resource
-def load_model():
-    # Use GPT-Neo for better emotional depth
-    generator = pipeline("text-generation", model="EleutherAI/gpt-neo-1.3B")
-    return generator
+# ——— Page Setup ———
+st.set_page_config(
+    page_title="💘 Romantic Poem Generator",
+    layout="centered",
+    page_icon="🌹"
+)
+st.title("💘 AI Romantic Poem Generator")
+st.markdown("Choose language & theme, then let AI craft a poem that speaks to the heart.")
 
-# Build the poem prompt
-def build_prompt(language, theme):
+# ——— Load API Key Securely ———
+openai.api_key = (
+    st.secrets["openai"]["api_key"]
+    if "openai" in st.secrets and "api_key" in st.secrets["openai"]
+    else os.getenv("OPENAI_API_KEY")
+)
+if not openai.api_key:
+    st.error("🔒 API key not found. Add it to `.streamlit/secrets.toml` or set the `OPENAI_API_KEY` env var.")
+    st.stop()
+
+# ——— User Inputs ———
+language = st.radio("Poem Language", ["English", "Yorùbá"])
+theme = st.text_input("What should the poem be about?", placeholder="e.g. her smile, our journey, moonlight…")
+use_gpt4 = st.checkbox("Use GPT-4 (if you have access)", value=False)
+
+# ——— Prompt Builder ———
+def build_messages(language, theme):
+    system = (
+        "You are a world-class romantic poet. "
+        "Use vivid metaphors, deep emotion, and heartfelt language."
+    )
     if language == "English":
-        return f"Write a deeply emotional romantic poem about {theme}. Use metaphors, longing, and vulnerability. Make the reader feel loved."
+        user = (
+            f"Write a deeply emotional romantic poem about “{theme}.” "
+            "Use metaphors, longing, vulnerability, and passion—make it unforgettable."
+        )
     else:
-        return f"Kọ orin ifẹ̀ pẹ̀lú ìtàn àyà tó kún fún ìfẹ́ àti ìbànújẹ nípa {theme}. Ṣe é kún fún òwe, ìtàn ayé àti àkúnya."
+        user = (
+            f"Kọ orin ifẹ̀ pẹ̀lú ìtàn tí yóò kan ọkàn ní Yorùbá nípa “{theme}.” "
+            "Lo òwe, ìtàn ìfẹ́, ìbànújẹ, àti ìdúróṣinṣin—jẹ́ kí ó dùn bí àlá alẹ́."
+        )
+    return [{"role":"system","content":system}, {"role":"user","content":user}]
 
-# Generate the poem
-def generate_poem(generator, prompt):
-    result = generator(prompt, max_length=200, num_return_sequences=1)
-    return result[0]['generated_text']
+# ——— Generate & Display ———
+if st.button("💌 Generate Poem") and theme.strip():
+    with st.spinner("Composing your masterpiece…"):
+        model = "gpt-4" if use_gpt4 else "gpt-3.5-turbo"
+        messages = build_messages(language, theme.strip())
+        resp = openai.ChatCompletion.create(
+            model=model,
+            messages=messages,
+            temperature=0.8,
+            max_tokens=250,
+        )
+        poem = resp.choices[0].message.content.strip()
 
-# Save poem to file
-def save_poem(poem, theme, language):
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"poem_{theme}_{language}_{timestamp}.txt"
-    with open(filename, "w", encoding="utf-8") as f:
-        f.write(poem)
-    return filename
+        st.markdown("### 💓 Your Poem")
+        st.text_area("", poem, height=300)
 
-# Streamlit UI
-st.set_page_config(page_title="Love Poem Generator ❤️", layout="centered")
-st.title("💌 Romantic Poem Generator")
-st.markdown("Let your feelings speak... in English or Yoruba.")
-
-# User inputs
-language = st.radio("Choose your language:", ("English", "Yoruba"))
-theme = st.text_input("What should the poem be about? (e.g., her smile, our love, distance)")
-
-if st.button("Generate Poem"):
-    if theme.strip() == "":
-        st.warning("Please enter a theme for your poem.")
-    else:
-        with st.spinner("Crafting your poem... 💘"):
-            generator = load_model()
-            prompt = build_prompt(language, theme)
-            poem = generate_poem(generator, prompt)
-            st.success("Done! Here's your love poem:")
-            st.text_area("Poem", poem, height=300)
-
-            if st.button("💾 Save Poem"):
-                file = save_poem(poem, theme, language)
-                st.success(f"Poem saved as '{file}'")
-
+        # ——— Download button ———
+        filename = f"poem_{theme.replace(' ','_')}_{language}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        st.download_button(
+            "📥 Save as .txt",
+            data=poem,
+            file_name=filename,
+            mime="text/plain"
+        )
+elif st.button("💌 Generate Poem"):
+    st.warning("Please enter a theme first.")
