@@ -3,7 +3,7 @@ import streamlit as st
 from datetime import datetime
 
 # Set your API key directly (temporary for testing, remove later)
-openai.api_key = "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"
+openai.api_key = "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"
 
 st.set_page_config(page_title="Poem Generator", layout="centered")
 st.title("📝 Emotional Poem Generator (Yorùbá + English)")
